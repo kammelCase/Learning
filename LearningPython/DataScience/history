@@ -1,0 +1,50 @@
+# learning about In and Out objects in Jupyter
+
+import math
+math.sin(2)
+math.cos(2)
+print(In)
+print(In[2])
+print(Out[2])
+# i wonder how it'll show for defining a function
+
+def thingy(a):
+    a*=2
+    return a
+print(In[10])
+try:
+    print(In[10])
+except IndexError:
+    print("Index Error, as expected :)")
+try:
+    print(In[10])
+except IndexError:
+    print("Index Error, as expected :-D")
+try:
+    print(Out[10])
+except KeyError:
+    print("""Seems like trying to print an Out where there was none is bad.
+    so here we are. Yep...""")
+# we can use the _ variable to access the most previous output
+
+print(_) #cos2
+print(__) #sin2
+print(_ + __) #adding them
+print(_ < __) #booling them
+# use ; at the end of a statement to suppress the output
+# let's say i want to keep cos and sin in my recent memory
+
+def multi(a, b):
+    a*=b
+    return a
+
+multi(2, 5);
+
+print(_) #cos2 still in previous output
+print(__) #sin2 still in previous output (2)
+# recap!
+
+get_ipython().run_line_magic('history', '-n 28')
+get_ipython().run_line_magic('pinfo', '%history')
+get_ipython().run_line_magic('history', '-t -f history')
+get_ipython().run_line_magic('history', '-t -f history')
