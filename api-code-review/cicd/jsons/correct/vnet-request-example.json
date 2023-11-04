@@ -1,0 +1,23 @@
+{ "work-order": 
+  { "request": { "ticket": "TASK12345" }
+  , "environ": "icclab azure"
+  , "deploys": 
+    [ { "VIRTUALNETWORK": 
+        { "vnet_name"           : "mgbicc-sptest-e2-vnet"
+        , "resource_group_name" : "mgb-icc-cloud-foundations-e2-rg"
+        , "location"            : "eastus2"
+        , "address_space"       : [ "10.0.0.0/16" ]
+        , "dns_servers"         : [ "170.223.101.17", "170.223.111.244", "132.183.100.12" ]
+        }
+      }
+    , { "VIRTUALNETWORK":
+        { "vnet_name"           : "mgbicc-sptest-2-e2-vnet"
+        , "resource_group_name" : "mgb-icc-cloud-foundations-e2-rg"
+        , "location"            : "eastus2"
+        , "address_space"       : [ "10.0.0.0/16" ]
+        , "dns_servers"         : [ "170.223.101.17", "170.223.111.244", "132.183.100.12" ]
+        }
+      }
+    ]
+  }
+}

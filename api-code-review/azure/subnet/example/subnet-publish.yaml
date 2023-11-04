@@ -1,0 +1,105 @@
+stages:
+  - stage: bridgecrewScan
+
+    jobs:
+    - job: bridgecrewScan
+      displayName: Bridgecrew Scan
+      pool: 'adoagents'
+
+      steps:
+      - task: Bash@3
+        displayName: Install Prereq softwars
+        inputs:
+          targetType: 'inline'
+          script: |
+            sudo apt install wget -y
+            sudo apt install unzip -y
+            sudo apt-get update
+            sudo apt-get install -y ca-certificates curl apt-transport-https lsb-release gnupg
+            curl -sL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/microsoft.gpg > /dev/null
+            AZ_REPO=$(lsb_release -cs)
+            echo "deb [arch=amd64] https://packages.microsoft.com/repos/azure-cli/ $AZ_REPO main" | sudo tee /etc/apt/sources.list.d/azure-cli.list
+            sudo apt-get update
+            sudo apt-get install -y azure-cli
+            sudo apt-get install jq -y
+            
+      - task: TerraformInstaller@0
+        displayName: Install Terraform
+        inputs:
+          terraformVersion: 'latest'
+
+      - task: UsePythonVersion@0
+        displayName: 'Install Python 3.8'
+        inputs:
+          versionSpec: '3.8'
+      - script: pip install bridgecrew
+        displayName: 'Install the Bridgecrew CLI'  
+     
+      - task: CopyFiles@2
+        displayName: 'Copy Files to: $(System.DefaultWorkingDirectory)'
+        inputs:
+          SourceFolder: 'subnet'
+          Contents: |
+            **/*.tf
+            **/*.tfvars
+            **/*.md
+            !**/example/main.tf
+            !**/example/subnet-publish.yaml
+            !**/README.md
+          TargetFolder: '$(System.DefaultWorkingDirectory)'
+          flattenFolders: true
+
+      - task: TerraformTaskV3@3
+        displayName: Terraform init
+        inputs:
+          provider: 'azurerm'
+          command: 'init'
+          backendServiceArm: 'iac-azure-portal-sc'
+          backendAzureRmResourceGroupName: 'iac-lab-adoagent-rg'
+          backendAzureRmStorageAccountName: 'iaclabsa01'
+          backendAzureRmContainerName: 'statefiles'
+          backendAzureRmKey: 'terraform2.tfstate'
+      
+      - task: TerraformTaskV3@3
+        displayName: Terraform Plan
+        inputs:
+          provider: 'azurerm'
+          command: 'plan'
+          commandOptions: '-out=$(System.DefaultWorkingDirectory)/terraform.tfplan'
+          environmentServiceNameAzureRM: 'iac-azure-portal-sc'
+
+      - task: Bash@3
+        displayName: Bridgecrew Scan
+        inputs:
+          targetType: 'inline'
+          workingDirectory: $(System.DefaultWorkingDirectory)
+          script: |
+            terraform show -json $(System.DefaultWorkingDirectory)/terraform.tfplan | jq '.' > tfplan.json
+            bridgecrew -f 'tfplan.json' --bc-api-key '2b3d5e4a-6e3e-47da-bb50-0054dd64b210' --repo-id 'dmangeshtambe0819/iac-azure-modules' --branch 'main' --soft-fail --download-external-modules 'bridgecrewio/bridgecrew-azure-read-only/azurerm' #--hard-fail-on HIGH
+
+## Run only for publishing artifacts
+  - stage: publishArtifacts
+    jobs:
+    - job: publishArtifacts
+      displayName: Publish IaC Artifacts
+      #pool: 'adoagents'
+      steps:
+      - task: CopyFiles@2
+        displayName: 'Copy Files to: $(System.DefaultWorkingDirectory)'
+        inputs:
+          SourceFolder: 'subnet'
+          Contents: |
+            **/*.tf
+            **/*.tfvars
+            **/*.md
+          TargetFolder: '$(System.DefaultWorkingDirectory)'
+      - task: UniversalPackages@0
+        displayName: Publish Artifacts
+        inputs:
+          command: 'publish'
+          publishDirectory: '$(System.DefaultWorkingDirectory)'
+          feedsToUsePublish: 'internal'
+          vstsFeedPublish: 'a977ba30-1d20-4f20-b7dc-2d5a2cb9674e'
+          vstsFeedPackagePublish: 'subnet'
+          versionOption: 'minor'
+          packagePublishDescription: 'subnet'

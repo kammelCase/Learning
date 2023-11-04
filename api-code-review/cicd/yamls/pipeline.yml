@@ -1,0 +1,50 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger:
+- development
+
+pool:
+  name: "SH-PRD-ICC"  
+
+variables:
+- group: terraform-env
+- 
+
+steps:
+- task: terraformsetup 
+  displayName: 'Use Terraform latest'
+
+- script: |
+        RC_FILE=".terraformrc"
+        cat > ${RC_FILE} << EOF
+        credentials "app.terraform.io" {
+          token = "$(terraform-api-token)"
+        }
+        EOF
+        mv .terraformrc ~/.terraformrc
+        export TF_CLI_CONFIG_FILE="~/.terraformrc"
+  name: terraform_cloud_credentials
+  displayName: 'Terraform Cloud Credentials'
+
+- task: TerraformCLI
+  inputs:
+    command: 'init'
+    backendType: 'selfConfigured'
+    allowTelemetryCollection: true
+
+- task: TerraformCLI
+  inputs:
+    command: 'plan'
+    allowTelemetryCollection: true
+
+- task: TerraformCLI
+  inputs:
+    command: 'apply'
+    allowTelemetryCollection: true
+- script: |
+        rm ~/.terraformrc
+  name: terraform_cloud_credentials_cleanup
+  displayName: 'Terraform Cloud Credentials Clean Up'
