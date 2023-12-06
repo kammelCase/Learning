@@ -1,3 +1,4 @@
 # Learning
 
-#test123
+# Learning repo for Mark Raafat Kammel
+# Currently focused on C and Python
